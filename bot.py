@@ -19,7 +19,7 @@ with open("botpid.txt", "w") as file:
 
 
 def log_to_file(cache):
-    with open("log.txt", "a") as file:
+    with open("log.csv", "a") as file:
         for string in cache:
             file.write(str(string) + "\n")
         return []
@@ -52,9 +52,7 @@ def main(messages):
                     answer = random.choice(answers_for_me)
                     logger(m, answer)
                     print(wa.main(m.text))
-                    bot.send_message(chatid, answer)
-    # else:
-    #     listen_start(messages)
+                    bot.send_message(chat_id=chatid, text=answer)
 
 
 @bot.message_handler(commands=["start"])
@@ -76,6 +74,7 @@ def echo_stop(msg):
 @bot.message_handler()
 def echo_messages(msg):
     if not start_status:
+        logger(msg, "Bot is not activated")
         welcome_text = f"Привет, {msg.from_user.first_name}. Я рекомендательный бот. \
         Для начала общения введите /start."
         bot.send_message(msg.chat.id, welcome_text)
