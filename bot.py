@@ -1,12 +1,10 @@
 import os
 import time
 import random
-import multiprocessing as mp
 import telebot
-import logger
 import word_analyzer as wa
 
-TOKEN = "815730867:AAEvONIOpcwNZDdhxzoqNw8-gV_LCV9oT6I"
+TOKEN = "TOKEN"
 
 start_time = time.time()
 
@@ -27,7 +25,7 @@ def log_to_file(cache):
         return []
 
 
-def cashing(msg, answer):
+def logger(msg, answer):
     global cache, start_time
     chat_id = msg.chat.id
     user_id = msg.from_user.id
@@ -52,7 +50,7 @@ def main(messages):
             if start_status:
                 if m.content_type == 'text':
                     answer = random.choice(answers_for_me)
-                    cashing(m, answer)
+                    logger(m, answer)
                     print(wa.main(m.text))
                     bot.send_message(chatid, answer)
     # else:
@@ -87,5 +85,5 @@ bot.set_update_listener(main)
 bot.polling(none_stop=True)
 
 
-while True:  # Don't let the main Thread end.
+while True:
     pass
