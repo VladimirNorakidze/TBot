@@ -10,9 +10,6 @@ TOKEN = "815730867:AAEvONIOpcwNZDdhxzoqNw8-gV_LCV9oT6I"
 
 start_time = time.time()
 
-elite_list = [93500076, 203417470, 318022478]
-answers = ["Пошел нахер!", "Иди в жопу", "Сам мудак", "Ты это мне?", "Все, пиздец!",
-                   "Засужу!", "ЪУЪ С*КА", "Че ты меня бесишь?", "Паш, я не могу понять, он прикалывается что ли?", "🖕"]
 answers_for_me = ["Твои шутки - отпад 🤣", "Приветики 😘", "Я так рад тебя видеть 😍", "Блин, клево)",
                   "А расскажи еще что-нибудь", "Лол", "Ахахаха", "Ору 😅", "Го еграть? :3", "👍"]
 cache = []
@@ -54,10 +51,7 @@ def main(messages):
             uid = m.from_user.id
             if start_status:
                 if m.content_type == 'text':
-                    if uid in elite_list:
-                        answer = random.choice(answers_for_me)
-                    else:
-                        answer = random.choice(answers)
+                    answer = random.choice(answers_for_me)
                     cashing(m, answer)
                     print(wa.main(m.text))
                     bot.send_message(chatid, answer)
