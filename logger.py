@@ -15,8 +15,10 @@ def logger(msg, answer, cache, start_time):
         input_msg = msg.text
     elif msg.content_type == "photo":
         input_msg = msg.json["photo"][-1]["file_id"]
+    elif msg.content_type == "document" and ("image" in msg.document.mime_type):
+        input_msg = msg.document.file_id
     else:
-        input_msg = "Unknown content type..."
+        input_msg = msg.document.mime_type
     datetime = time.strftime("%d/%m/%y %X", time.localtime())
     res = f"{datetime}," + str(chat_id) + "," + str(user_id) + \
           f",{msg.content_type},\"" + str(input_msg) + "\",\"" + answer + "\""

@@ -4,20 +4,56 @@ import time
 import random
 import telebot
 import logger
-import analyzer
+import analyzer as a
 
 TOKEN = "TOKEN"
 
 start_time = time.time()
-
-answers_for_me = ["Твои шутки - отпад 🤣", "Приветики 😘", "Я так рад тебя видеть 😍", "Блин, клево)",
-                  "А расскажи еще что-нибудь", "Лол", "Ахахаха", "Ору 😅", "Го еграть? :3", "👍"]
 cache = []
 
 bot = telebot.TeleBot(TOKEN)
-start_status = False
+start_status = True
 with open("botpid.txt", "w") as file:
     file.write(str(os.getpid()))
+
+
+def text_msg(msg):
+    global cache, start_time
+    chatid = msg.chat.id
+    answer = a.wa_analyzer(msg.text)
+    cache, start_time = logger.logger(msg, answer, cache, start_time)
+    bot.send_message(chat_id=chatid, text=answer)
+
+
+def img_proc(fileid):
+    file = bot.get_file(file_id=fileid)
+    response = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{file.file_path}")
+    return str(a.img_analyzer(response))
+
+
+def photo_msg(msg):
+    global cache, start_time
+    chatid = msg.chat.id
+    cache, start_time = logger.logger(msg, "", cache, start_time)
+    bot.send_message(chat_id=chatid, text="😮")
+    time.sleep(1)
+    bot.send_message(chat_id=chatid, text="Это что... Картинка???")
+    bot.send_message(chat_id=chatid, text="И что с ней делать? Перевести в байты? Ну тогда получи!!!")
+    ans = img_proc(msg.photo[-1].file_id)
+    time.sleep(1)
+    bot.send_message(chat_id=chatid, text=ans)
+
+
+def doc_msg(msg):
+    global cache, start_time
+    chatid = msg.chat.id
+    cache, start_time = logger.logger(msg, "", cache, start_time)
+    bot.send_message(chat_id=chatid, text="😮")
+    time.sleep(1)
+    bot.send_message(chat_id=chatid, text="Документ, лол")
+    ans = img_proc(msg.document.file_id)
+    time.sleep(1)
+    bot.send_message(chat_id=chatid, text=ans)
 
 
 def main(messages):
@@ -27,22 +63,17 @@ def main(messages):
     global cache, start_time
     if messages[-1].text != "/stop":
         for m in messages:
-            chatid = m.chat.id
             if start_status:
                 if m.content_type == "text":
-                    answer = random.choice(answers_for_me)
-                    cache, start_time = logger.logger(m, answer, cache, start_time)
-                    print(wa.wa_analyzer(m.text))
-                    bot.send_message(chat_id=chatid, text=answer)
+                    text_msg(m)
                 elif m.content_type == "photo":
-                    cache, start_time = logger.logger(m, "", cache, start_time)
-                    bot.send_message(chat_id=chatid, text="😮")
-                    time.sleep(1)
-                    bot.send_message(chat_id=chatid, text="Это что... Картинка???")
-                    # file = bot.get_file(file_id=m.photo[-1].file_id)
-                    # picture = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{file.file_path}")
-                    # with open("test.jpg", "wb") as pict:
-                    #     pict.write(picture.content)
+                    photo_msg(m)
+                elif m.content_type == "document" and "image" in m.document.mime_type:
+                    doc_msg(m)
+                else:
+                    cache, start_time = logger.logger(m, "Unknown type...", cache, start_time)
+                    bot.reply_to(m, text="Я не понимаю, что это 😭😭😭")
+                    bot.send_message(chat_id=m.chat.id, text="Опиши, что хочешь или пришли фотку(")
 
 
 @bot.message_handler(commands=["start"])
