@@ -7,7 +7,7 @@ import telebot
 import logger
 import analyzer as a
 
-TOKEN = "815730867:AAHUGddDgg6tbrV7GRLkEFg4THScc14rL7Q"
+TOKEN = "TOKEN"
 
 start_time = time.time()
 cache = []
