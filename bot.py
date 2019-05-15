@@ -37,10 +37,11 @@ def photo_msg(msg):
     cache, start_time = logger.logger(msg, "", cache, start_time)
     bot.send_message(chat_id=chatid, text="😮")
     time.sleep(1)
-    bot.send_message(chat_id=chatid, text="Это что... Картинка???")
-    bot.send_message(chat_id=chatid, text="И что с ней делать? Перевести в байты? Ну тогда получи!!!")
+    bot.reply_to(msg, text="Это что... Картинка???")
+    bot.send_message(chat_id=chatid, text="Смотри че могу)")
     ans = img_proc(msg.photo[-1].file_id)
     time.sleep(1)
+    bot.send_message(chat_id=chatid, text="Хоба!")
     bot.send_message(chat_id=chatid, text=ans)
 
 
@@ -50,7 +51,7 @@ def doc_msg(msg):
     cache, start_time = logger.logger(msg, "", cache, start_time)
     bot.send_message(chat_id=chatid, text="😮")
     time.sleep(1)
-    bot.send_message(chat_id=chatid, text="Документ, лол")
+    bot.reply_to(msg, text="Вот и секретные докумееееееентики подъехали)")
     ans = img_proc(msg.document.file_id)
     time.sleep(1)
     bot.send_message(chat_id=chatid, text=ans)
@@ -73,6 +74,7 @@ def main(messages):
                 else:
                     cache, start_time = logger.logger(m, "Unknown type...", cache, start_time)
                     bot.reply_to(m, text="Я не понимаю, что это 😭😭😭")
+                    time.sleep(1)
                     bot.send_message(chat_id=m.chat.id, text="Опиши, что хочешь или пришли фотку(")
 
 
@@ -97,8 +99,7 @@ def echo_messages(msg):
     global cache, start_time
     if not start_status:
         cache, start_time = logger.logger(msg, answer="Bot is not activated", cache=cache, start_time=start_time)
-        welcome_text = f"Привет, {msg.from_user.first_name}. Я рекомендательный бот. \
-        Для начала общения введите /start."
+        welcome_text = f"Привет, {msg.from_user.first_name}. Я рекомендательный бот. Для начала общения введите /start."
         bot.send_message(msg.chat.id, welcome_text)
 
 
