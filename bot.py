@@ -1,58 +1,81 @@
 import os
+import requests
 import time
 import random
 import telebot
-import word_analyzer as wa
+import logger
+import analyzer as a
 
 TOKEN = "TOKEN"
 
 start_time = time.time()
-
-answers_for_me = ["Твои шутки - отпад 🤣", "Приветики 😘", "Я так рад тебя видеть 😍", "Блин, клево)",
-                  "А расскажи еще что-нибудь", "Лол", "Ахахаха", "Ору 😅", "Го еграть? :3", "👍"]
 cache = []
 
 bot = telebot.TeleBot(TOKEN)
-start_status = False
+start_status = True
 with open("botpid.txt", "w") as file:
     file.write(str(os.getpid()))
 
 
-def log_to_file(cache):
-    with open("log.csv", "a") as file:
-        for string in cache:
-            file.write(str(string) + "\n")
-        return []
-
-
-def logger(msg, answer):
+def text_msg(msg):
     global cache, start_time
-    chat_id = msg.chat.id
-    user_id = msg.from_user.id
-    text = msg.text
-    datetime = time.strftime("%d/%m/%y %X", time.localtime())
-    res = f"{datetime}," + str(chat_id) + "," + str(user_id) + ",\"" + str(text) + "\",\"" + answer + "\""
-    print(res)
-    cache.append(res)
-    if time.time() - start_time > 10:
-        cache = log_to_file(cache)
-        start_time = time.time()
+    chatid = msg.chat.id
+    answer = a.wa_analyzer(msg.text)
+    cache, start_time = logger.logger(msg, answer, cache, start_time)
+    bot.send_message(chat_id=chatid, text=answer)
+
+
+def img_proc(fileid):
+    file = bot.get_file(file_id=fileid)
+    response = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{file.file_path}")
+    return str(a.img_analyzer(response))
+
+
+def photo_msg(msg):
+    global cache, start_time
+    chatid = msg.chat.id
+    cache, start_time = logger.logger(msg, "", cache, start_time)
+    bot.send_message(chat_id=chatid, text="😮")
+    time.sleep(1)
+    bot.reply_to(msg, text="Это что... Картинка???")
+    bot.send_message(chat_id=chatid, text="Смотри че могу)")
+    ans = img_proc(msg.photo[-1].file_id)
+    time.sleep(1)
+    bot.send_message(chat_id=chatid, text="Хоба!")
+    bot.send_message(chat_id=chatid, text=ans)
+
+
+def doc_msg(msg):
+    global cache, start_time
+    chatid = msg.chat.id
+    cache, start_time = logger.logger(msg, "", cache, start_time)
+    bot.send_message(chat_id=chatid, text="😮")
+    time.sleep(1)
+    bot.reply_to(msg, text="Вот и секретные докумееееееентики подъехали)")
+    ans = img_proc(msg.document.file_id)
+    time.sleep(1)
+    bot.send_message(chat_id=chatid, text=ans)
 
 
 def main(messages):
     """
     When new messages arrive TeleBot will call this function.
     """
+    global cache, start_time
     if messages[-1].text != "/stop":
         for m in messages:
-            chatid = m.chat.id
-            uid = m.from_user.id
             if start_status:
-                if m.content_type == 'text':
-                    answer = random.choice(answers_for_me)
-                    logger(m, answer)
-                    print(wa.main(m.text))
-                    bot.send_message(chat_id=chatid, text=answer)
+                if m.content_type == "text":
+                    text_msg(m)
+                elif m.content_type == "photo":
+                    photo_msg(m)
+                elif m.content_type == "document" and "image" in m.document.mime_type:
+                    doc_msg(m)
+                else:
+                    cache, start_time = logger.logger(m, "Unknown type...", cache, start_time)
+                    bot.reply_to(m, text="Я не понимаю, что это 😭😭😭")
+                    time.sleep(1)
+                    bot.send_message(chat_id=m.chat.id, text="Опиши, что хочешь или пришли фотку(")
 
 
 @bot.message_handler(commands=["start"])
@@ -73,10 +96,10 @@ def echo_stop(msg):
 
 @bot.message_handler()
 def echo_messages(msg):
+    global cache, start_time
     if not start_status:
-        logger(msg, "Bot is not activated")
-        welcome_text = f"Привет, {msg.from_user.first_name}. Я рекомендательный бот. \
-        Для начала общения введите /start."
+        cache, start_time = logger.logger(msg, answer="Bot is not activated", cache=cache, start_time=start_time)
+        welcome_text = f"Привет, {msg.from_user.first_name}. Я рекомендательный бот. Для начала общения введите /start."
         bot.send_message(msg.chat.id, welcome_text)
 
 
