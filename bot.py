@@ -1,12 +1,13 @@
 import os
+import re
 import requests
 import time
-import random
+import emoji
 import telebot
 import logger
 import analyzer as a
 
-TOKEN = "TOKEN"
+TOKEN = "815730867:AAEvf0m5WwnKzO-qJoHUTnbQdN5e6eh9WKo"
 
 start_time = time.time()
 cache = []
@@ -17,44 +18,84 @@ with open("botpid.txt", "w") as file:
     file.write(str(os.getpid()))
 
 
-def text_msg(msg):
-    global cache, start_time
-    chatid = msg.chat.id
-    answer = a.wa_analyzer(msg.text)
-    cache, start_time = logger.logger(msg, answer, cache, start_time)
-    bot.send_message(chat_id=chatid, text=answer)
+def check_emoji(text):
+    f = lambda x: bool(emoji.get_emoji_regexp().search(x))
+    text = emoji.get_emoji_regexp().split(text)
+    if not (text[0] or text[-1]):
+        if len(text) == 3 and f(text[1]):
+            return True
+        elif len(text) == 5:
+            if f(text[1]) and (text[2] == "\u200d") and f(text[3]):
+                return True
+        else:
+            return False
+    else:
+        return False
 
 
-def img_proc(fileid):
-    file = bot.get_file(file_id=fileid)
-    response = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{file.file_path}")
-    return str(a.img_analyzer(response))
+def img_processing(fileid=None, url=None):
+    if (fileid is not None) and (url is None):
+        file = bot.get_file(file_id=fileid)
+        response = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{file.file_path}")
+    else:
+        response = requests.get(url)
+    return a.img_analyzer(response)
+
+
+def photo_sender(chat_id, url):
+    response = requests.get(url)
+    bot.send_photo(chat_id=chat_id, photo=response.content)
 
 
 def photo_msg(msg):
-    global cache, start_time
     chatid = msg.chat.id
-    cache, start_time = logger.logger(msg, "", cache, start_time)
     bot.send_message(chat_id=chatid, text="😮")
-    time.sleep(1)
     bot.reply_to(msg, text="Это что... Картинка???")
     bot.send_message(chat_id=chatid, text="Смотри че могу)")
-    ans = img_proc(msg.photo[-1].file_id)
+    urls, titles = img_processing(fileid=msg.photo[-1].file_id)
     time.sleep(1)
+    for url in urls:
+        photo_sender(chat_id=chatid, url=url)
     bot.send_message(chat_id=chatid, text="Хоба!")
-    bot.send_message(chat_id=chatid, text=ans)
+    return titles
 
 
 def doc_msg(msg):
-    global cache, start_time
     chatid = msg.chat.id
-    cache, start_time = logger.logger(msg, "", cache, start_time)
     bot.send_message(chat_id=chatid, text="😮")
     time.sleep(1)
     bot.reply_to(msg, text="Вот и секретные докумееееееентики подъехали)")
-    ans = img_proc(msg.document.file_id)
+    bot.send_message(chat_id=chatid, text="Ща верну, секунду")
+    urls, titles = img_processing(fileid=msg.document.file_id)
     time.sleep(1)
-    bot.send_message(chat_id=chatid, text=ans)
+    for url in urls:
+        photo_sender(chat_id=chatid, url=url)
+    bot.send_message(chat_id=chatid, text="Хоба!")
+    return titles
+
+
+def text_msg(msg):
+    chatid = msg.chat.id
+    if not ("http" in msg.text):
+        urls, titles = a.wa_analyzer(msg.text)
+        bot.send_message(chat_id=chatid, text="Одну секундочку...")
+        time.sleep(1)
+        for url in urls:
+            photo_sender(chatid, url=url)
+        bot.send_message(chat_id=chatid, text="Хоба!")
+    else:
+        pattern = r"^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+[.](jpg|jpeg|png|gif)$"
+        if re.match(pattern, msg.text, re.IGNORECASE):
+            bot.send_message(chat_id=chatid, text="Сейчас пришлю что-нибудь...")
+            time.sleep(1)
+            urls, titles = img_processing(url=msg.text)
+            for url in urls:
+                photo_sender(chat_id=chatid, url=url)
+        else:
+            bot.send_message(chat_id=chatid, text=r"Я не могу найти тут картинку... Проверьте, пожалуйста, что "
+                                                  r"ссылка оканчивается на .jpg, .jpeg, .png или .gif...")
+            titles = []
+    return titles
 
 
 def main(messages):
@@ -63,14 +104,25 @@ def main(messages):
     """
     global cache, start_time
     if messages[-1].text != "/stop":
-        for m in messages:
-            if start_status:
+        if start_status:
+            for m in messages:
                 if m.content_type == "text":
-                    text_msg(m)
+                    if check_emoji(m.text):
+                        name = m.from_user.first_name
+                        ans = f"{name}, я не смогу обработать сообщение состоящее из одного смайла..."
+                        ans += "Пришли то, что хотел бы увидеть :3"
+                        bot.send_message(m.chat.id, text=ans)
+                    else:
+                        ans = text_msg(m)
+                        cache, start_time = logger.logger(m, ans, cache, start_time)
                 elif m.content_type == "photo":
-                    photo_msg(m)
-                elif m.content_type == "document" and "image" in m.document.mime_type:
-                    doc_msg(m)
+                    ans = photo_msg(m)
+                    cache, start_time = logger.logger(m, ans, cache, start_time)
+                elif m.content_type == "document" and ("image" in m.document.mime_type):
+                    ans = doc_msg(m)
+                    cache, start_time = logger.logger(m, ans, cache, start_time)
+                elif m.content_type == "sticker":
+                    bot.send_message(m.chat.id, text=m.sticker.emoji)
                 else:
                     cache, start_time = logger.logger(m, "Unknown type...", cache, start_time)
                     bot.reply_to(m, text="Я не понимаю, что это 😭😭😭")
@@ -94,7 +146,7 @@ def echo_stop(msg):
     bot.reply_to(msg, f"Покеда, {msg.from_user.first_name} ✌️")
 
 
-@bot.message_handler()
+@bot.message_handler(content_types=["text", "doc", "photo", "sticker"])
 def echo_messages(msg):
     global cache, start_time
     if not start_status:
