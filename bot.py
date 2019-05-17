@@ -2,13 +2,11 @@ import os
 import re
 import requests
 import time
-import io
-import random
 import telebot
 import logger
 import analyzer as a
 
-TOKEN = "TOKEN"
+TOKEN = "815730867:AAEvf0m5WwnKzO-qJoHUTnbQdN5e6eh9WKo"
 
 start_time = time.time()
 cache = []

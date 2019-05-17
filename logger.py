@@ -7,7 +7,10 @@ FILENAME_VK = "log_VKbot.csv"
 def log_to_file(cache, bot_name):
     filename = FILENAME_T if bot_name == "Tbot" else FILENAME_VK
     if not os.path.exists(filename):
-        head = "datetime,user_id,message_type,text_or_file_id,answer\n"
+        if bot_name == "Tbot":
+            head = "datetime,chat_id,user_id,message_type,file_content_type,text_or_file_id,answer\n"
+        else:
+            head = "datetime,user_id,message_type,text_or_file_id,answer\n"
         with open(filename, "w") as f:
             f.write(head)
     with open(filename, "a") as file:
@@ -21,19 +24,22 @@ def logger(msg, answer, cache, start_time):
     user_id = msg.from_user.id
     if msg.content_type == "text":
         input_msg = msg.text
-        msg_mime_type = ""
+        file_content_type = ""
     elif msg.content_type == "photo":
         input_msg = msg.json["photo"][-1]["file_id"]
-        msg_mime_type = ""
+        file_content_type = ""
     elif msg.content_type == "document" and ("image" in msg.document.mime_type):
         input_msg = msg.document.file_id
-        msg_mime_type = msg.document.mime_type
+        file_content_type = msg.document.mime_type
+    elif msg.content_type == "sticker":
+        input_msg = msg.sticker.file_id
+        file_content_type = "sticker"
     else:
         input_msg = "Unknown type..."
-        msg_mime_type = msg.document.mime_type
+        file_content_type = msg.document.mime_type
     datetime = time.strftime("%d.%m.%y %X", time.localtime())
     res = [f"[{datetime}]", str(chat_id), str(user_id), str(msg.content_type),
-           str(msg_mime_type), "\"" + str(input_msg) + "\"", str(answer)]
+           str(file_content_type), "\"" + str(input_msg) + "\"", str(answer)]
     res = ",".join(res)
     print(res)
     cache.append(res)

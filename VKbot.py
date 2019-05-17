@@ -6,7 +6,7 @@ from vk_api.longpoll import VkLongPoll, VkEventType
 import logger
 import analyzer as a
 
-TOKEN = "TOKEN"  # for hakaton
+TOKEN = "bafa83804e118b05e67670d10ac9993b98369fb6129c353e85efef71dfa0070bf43b3d2b551ed67d9d0e8"  # for hakaton
 
 bot_activation = True
 vk_session = vk_api.VkApi(token=TOKEN)
@@ -105,12 +105,15 @@ for event in longpoll.listen():
         else:
             service_msg = "Введите /start, чтобы начать"
             vk.messages.send(user_id=event.user_id, message=service_msg, random_id=0)
-    elif event.type == VkEventType.MESSAGE_NEW and event.to_me and event.attachments["attach1_type"] == "doc":
+    elif event.type == VkEventType.MESSAGE_NEW and event.to_me and (event.attachments["attach1_type"] == "doc"
+            or event.attachments["attach1_type"] == "sticker"):
         bot_activation, continue_status = activating_bot(event, continue_status)
         if continue_status:
             continue
         if bot_activation:
-            service_msg = "Я не умею работать с доками("
+            service_msg = "Я не понимаю, что это 😭😭😭"
+            vk.messages.send(user_id=event.user_id, reply_to=event.message_id, message=service_msg, random_id=0)
+            service_msg = "Опиши, что хочешь или пришли фотку("
         else:
             service_msg = "Введите /start, чтобы начать"
         vk.messages.send(user_id=event.user_id, message=service_msg, random_id=0)

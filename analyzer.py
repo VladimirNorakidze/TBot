@@ -17,8 +17,14 @@ def wa_analyzer(msg: str):
 
 def img_analyzer(response):
     img = Image.open(BytesIO(response.content))
-    img = np.expand_dims(np.array(img).T, axis=0)
+    width = 224
+    height = 224
+    print(img.size)
+    img = img.resize((width, height), Image.ANTIALIAS)
+    print(img.size)
+    img = np.array(img).T
+    print(img.shape)
     b = BytesIO()
-    Image.fromarray(img.squeeze(axis=0).T, mode="RGB").save(b, "JPEG")
+    Image.fromarray(img.T, mode="RGB").save(b, "JPEG")
     b.seek(0)
     return b
