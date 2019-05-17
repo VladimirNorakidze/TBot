@@ -2,6 +2,7 @@ import os
 import re
 import requests
 import time
+import io
 import random
 import telebot
 import logger
@@ -24,28 +25,26 @@ def img_proc(chatid, fileid=None, url=None):
         response = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{file.file_path}")
     else:
         response = requests.get(url)
-    filename = f"tmp/tmp{chatid}.jpg"
-    if not os.path.exists("tmp/"):
-        os.mkdir("tmp/")
-    a.img_analyzer(response).save(filename)
-    return filename
+    return a.img_analyzer(response)
 
 
-def photo_msg(msg, response_filename):
+def photo_msg(msg, from_url=False):
     global cache, start_time
     chatid = msg.chat.id
     cache, start_time = logger.logger(msg, "", cache, start_time)
-    bot.send_message(chat_id=chatid, text="😮")
-    time.sleep(1)
-    bot.reply_to(msg, text="Это что... Картинка???")
-    bot.send_message(chat_id=chatid, text="Смотри че могу)")
-    with open(response_filename, "rb") as ans:
-        bot.send_message(chat_id=chatid, text="Хоба!")
-        bot.send_photo(chat_id=chatid, photo=ans)
-    os.remove(response_filename)
+    if not from_url:
+        bot.send_message(chat_id=chatid, text="😮")
+        time.sleep(1)
+        bot.reply_to(msg, text="Это что... Картинка???")
+        bot.send_message(chat_id=chatid, text="Смотри че могу)")
+        ans = img_proc(chatid=chatid, fileid=msg.photo[-1].file_id)
+    else:
+        ans = img_proc(chatid, url=msg.text)
+    bot.send_message(chat_id=chatid, text="Хоба!")
+    bot.send_photo(chat_id=chatid, photo=ans)
 
 
-def doc_msg(msg, response_filename):
+def doc_msg(msg):
     global cache, start_time
     chatid = msg.chat.id
     cache, start_time = logger.logger(msg, "", cache, start_time)
@@ -53,8 +52,8 @@ def doc_msg(msg, response_filename):
     time.sleep(1)
     bot.reply_to(msg, text="Вот и секретные докумееееееентики подъехали)")
     bot.send_message(chat_id=chatid, text="Ща верну, секунду")
-    with open(response_filename, "rb") as ans:
-        bot.send_photo(chat_id=chatid, photo=ans)
+    ans = img_proc(chatid=chatid, fileid=msg.document.file_id)
+    bot.send_photo(chat_id=chatid, photo=ans)
 
 
 def text_msg(msg):
@@ -67,8 +66,8 @@ def text_msg(msg):
     else:
         pattern = r"^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+[.](jpg|jpeg|png|gif)$"
         if re.match(pattern, msg.text, re.IGNORECASE):
-            filename = img_proc(chatid, url=msg.text)
-            photo_msg(msg, filename)
+            bot.send_message(chat_id=chatid, text="Сейчас, скачаю и пришлю")
+            photo_msg(msg, from_url=True)
         else:
             bot.send_message(chat_id=chatid, text=r"Я не могу найти тут картинку... Проверьте, пожалуйста, что "
                                                   r"ссылка оканчивается на .jpg, .jpeg, .png или .gif...")
@@ -85,11 +84,9 @@ def main(messages):
                 if m.content_type == "text":
                     text_msg(m)
                 elif m.content_type == "photo":
-                    response_filename = img_proc(m.chat.id, fileid=m.photo[-1].file_id)
-                    photo_msg(m, response_filename)
+                    photo_msg(m)
                 elif m.content_type == "document" and "image" in m.document.mime_type:
-                    response_filename = img_proc(m.chat.id, fileid=m.document.file_id)
-                    doc_msg(m, response_filename)
+                    doc_msg(m)
                 else:
                     cache, start_time = logger.logger(m, "Unknown type...", cache, start_time)
                     bot.reply_to(m, text="Я не понимаю, что это 😭😭😭")
