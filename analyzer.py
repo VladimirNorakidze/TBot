@@ -1,12 +1,9 @@
-import sys
-import re
 import numpy as np
 from PIL import Image
 from io import BytesIO
 import pandas as pd
-import pymorphy2 as pm2
 import botTextBrain as TextBrain
-# import module that will extract recommends
+import wearing
 
 print("Loading Database...")
 data = pd.read_csv("./data/dataset_sample.csv")
@@ -41,7 +38,6 @@ def img_analyzer(response):
     width, height = (224, 224)
     img = img.resize((width, height), Image.ANTIALIAS)
     img = np.array(img).T
-    assert img.shape == (3, width, height)
-    # subcategory = <функция, определяющая субкатегорию по фото>
-    # urls, titles = wa_analyzer(subcategory)
+    subcategory = wearing.wearing_classification(img)
+    print(subcategory)
     return wa_analyzer(subcategory)

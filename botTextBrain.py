@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 
 from annoy import AnnoyIndex
 from gensim.models import KeyedVectors, Word2Vec

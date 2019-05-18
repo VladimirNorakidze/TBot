@@ -13,7 +13,7 @@ def log_to_file(cache, bot_name):
             head = "datetime,user_id,message_type,text_or_file_id,answer\n"
         with open(filename, "w") as f:
             f.write(head)
-    with open(filename, "a",encoding="utf8") as file:
+    with open(filename, "a", encoding="utf8") as file:
         for string in cache:
             file.write(str(string) + "\n")
         return []
