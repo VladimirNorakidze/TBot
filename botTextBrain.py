@@ -25,9 +25,11 @@ def normalize_text(x):
 class VisBotTextBrain:
 
     def __init__(self, model_file, annoy_file):
-        self.model = KeyedVectors.load(model_file)  # Word2Vec.load
+        print("Loading w2v model...")
+        self.model = KeyedVectors.load("./data/" + model_file)  # Word2Vec.load
         self.annoy = AnnoyIndex(self.model.wv.vector_size)
-        self.annoy.load(annoy_file)
+        print("Loading Annoy...")
+        self.annoy.load("./data/" + annoy_file)
 
     def run(self, request=None):
         """
