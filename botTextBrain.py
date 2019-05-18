@@ -10,15 +10,16 @@ from gensim.models import KeyedVectors, Word2Vec
 import re
 import pymorphy2
 from functools import lru_cache
+
 morph = pymorphy2.MorphAnalyzer()
 
 
 @lru_cache(maxsize=100000)
-def get_normal_form (i):
+def get_normal_form (i):  # Функция преведения слова к нормальной форме
     return morph.normal_forms(i)[0]
 
 
-def normalize_text(x):
+def normalize_text(x):  # Функция, приводящая слова в строке к нормальной форме
     return ' '.join([get_normal_form(i) for i in re.findall('\w+', x)])
 
 
@@ -64,10 +65,8 @@ class VisBotTextBrain:
         return vect_repr
 
 
-# model_file = "w2v.model"
 annoy_file = "annoy15"
 model_file = "w2vsize300window2.model"
-# annoy_file = model_file + "_annoy_15"
 vbtb = VisBotTextBrain(model_file, annoy_file)
 
 

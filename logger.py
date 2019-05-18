@@ -5,6 +5,9 @@ FILENAME_VK = "log_VKbot.csv"
 
 
 def log_to_file(cache, bot_name):
+    """
+    Функция, сохраняющая лог в файл
+    """
     filename = FILENAME_T if bot_name == "Tbot" else FILENAME_VK
     if not os.path.exists(filename):
         if bot_name == "Tbot":
@@ -20,6 +23,9 @@ def log_to_file(cache, bot_name):
 
 
 def logger(msg, answer, cache, start_time):
+    """
+    Функция, составляющая лог для Телеграм-бота
+    """
     chat_id = msg.chat.id
     user_id = msg.from_user.id
     if msg.content_type == "text":
@@ -50,6 +56,9 @@ def logger(msg, answer, cache, start_time):
 
 
 def logger_vk(msg, answer, cache, start_time):
+    """
+    Функция, составляющая лог для ВК-бота
+    """
     user_id = msg.user_id
     if msg.text:
         msg_type = "text"

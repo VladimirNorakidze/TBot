@@ -7,19 +7,22 @@ import telebot
 import logger
 import analyzer as a
 
-TOKEN = "815730867:AAEvf0m5WwnKzO-qJoHUTnbQdN5e6eh9WKo"
+TOKEN = "TOKEN"
 
 start_time = time.time()
 cache = []
 
 bot = telebot.TeleBot(TOKEN)
-start_status = True
+start_status = False
 
 with open("botpid.txt", "w") as file:
     file.write(str(os.getpid()))
 
 
 def check_emoji(text):
+    """
+    Функция, проверяющая, что сообщение состоит не из одного смайлика
+    """
     f = lambda x: bool(emoji.get_emoji_regexp().search(x))
     text = emoji.get_emoji_regexp().split(text)
     if not (text[0] or text[-1]):
@@ -35,6 +38,10 @@ def check_emoji(text):
 
 
 def img_processing(fileid=None, url=None):
+    """
+    Функция, получающая url изображения и
+    вызывающая функцию-анализатора изображений
+    """
     if (fileid is not None) and (url is None):
         file = bot.get_file(file_id=fileid)
         response = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{file.file_path}")
@@ -43,65 +50,79 @@ def img_processing(fileid=None, url=None):
     return a.img_analyzer(response)
 
 
-def photo_sender(chat_id, url):
+def photo_sender(chat_id, url, product_id):
+    """
+    Функция отправляющая фото и ссылку на объявление в Юле пользователю
+    """
     response = requests.get(url)
     bot.send_photo(chat_id=chat_id, photo=response.content)
+    prod_url = 'https://youla.io/p' + str(product_id)
+    bot.send_message(chat_id=chat_id, text=prod_url)
 
 
 def photo_msg(msg):
+    """
+    Функция, вызываемая при типе входящего сообщения 'фото'
+    """
     chatid = msg.chat.id
     bot.send_message(chat_id=chatid, text="😮")
     bot.reply_to(msg, text="Это что... Картинка???")
-    bot.send_message(chat_id=chatid, text="Смотри че могу)")
-    urls, titles, _ = img_processing(fileid=msg.photo[-1].file_id)
+    bot.send_message(chat_id=chatid, text="Смотри, тебе может еще понравиться это)")
+    urls, titles, prod_id, _ = img_processing(fileid=msg.photo[-1].file_id)
     time.sleep(1)
-    for url in urls:
-        photo_sender(chat_id=chatid, url=url)
+    for i, url in enumerate(urls):
+        photo_sender(chat_id=chatid, url=url, product_id=prod_id[i])
     bot.send_message(chat_id=chatid, text="Хоба!")
     return titles
 
 
 def doc_msg(msg):
+    """
+    Функция, вызываемая при типе входящего сообщения 'документ'
+    """
     chatid = msg.chat.id
     bot.send_message(chat_id=chatid, text="😮")
     time.sleep(1)
     bot.reply_to(msg, text="Вот и секретные докумееееееентики подъехали)")
     bot.send_message(chat_id=chatid, text="Ща верну, секунду")
-    urls, titles, _ = img_processing(fileid=msg.document.file_id)
+    urls, titles, prod_id, _ = img_processing(fileid=msg.document.file_id)
     time.sleep(1)
-    for url in urls:
-        photo_sender(chat_id=chatid, url=url)
+    for i, url in enumerate(urls):
+        photo_sender(chat_id=chatid, url=url, product_id=prod_id[i])
     bot.send_message(chat_id=chatid, text="Хоба!")
     return titles
 
 
 def text_msg(msg):
+    """
+    Функция, вызываемая при типе входящего сообщения 'текст' или 'url'
+    """
     chatid = msg.chat.id
     if (msg.text.lower() == 'еще' or msg.text.lower() == 'ещё'):
-        urls, titles, msg_status = a.wa_analyzer()
+        urls, titles, prod_id, msg_status = a.wa_analyzer()
         if msg_status:
             bot.send_message(chat_id=chatid, text="Одну секундочку...")
             time.sleep(1)
-            for url in urls:
-                photo_sender(chatid, url=url)
+            for i, url in enumerate(urls):
+                photo_sender(chat_id=chatid, url=url, product_id=prod_id[i])
             bot.send_message(chat_id=chatid, text="Хоба!")
         else:
             bot.send_message(chat_id=chatid, text=urls)
     elif not ("http" in msg.text):
-        urls, titles, _ = a.wa_analyzer(msg.text)
+        urls, titles, prod_id,  _ = a.wa_analyzer(msg.text)
         bot.send_message(chat_id=chatid, text="Одну секундочку...")
         time.sleep(1)
-        for url in urls:
-            photo_sender(chatid, url=url)
+        for i, url in enumerate(urls):
+            photo_sender(chat_id=chatid, url=url, product_id=prod_id[i])
         bot.send_message(chat_id=chatid, text="Хоба!")
     else:
         pattern = r"^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+[.](jpg|jpeg|png|gif)$"
         if re.match(pattern, msg.text, re.IGNORECASE):
             bot.send_message(chat_id=chatid, text="Сейчас пришлю что-нибудь...")
             time.sleep(1)
-            urls, titles, _ = img_processing(url=msg.text)
-            for url in urls:
-                photo_sender(chat_id=chatid, url=url)
+            urls, titles, prod_id, _ = img_processing(url=msg.text)
+            for i, url in enumerate(urls):
+                photo_sender(chat_id=chatid, url=url, product_id=prod_id[i])
         else:
             bot.send_message(chat_id=chatid, text=r"Я не могу найти тут картинку... Проверьте, пожалуйста, что "
                                                   r"ссылка оканчивается на .jpg, .jpeg, .png или .gif...")
@@ -110,9 +131,6 @@ def text_msg(msg):
 
 
 def main(messages):
-    """
-    When new messages arrive TeleBot will call this function.
-    """
     global cache, start_time
     if messages[-1].text != "/stop":
         if start_status:
