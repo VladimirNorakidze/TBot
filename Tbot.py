@@ -14,6 +14,7 @@ cache = []
 
 bot = telebot.TeleBot(TOKEN)
 start_status = True
+
 with open("botpid.txt", "w") as file:
     file.write(str(os.getpid()))
 
@@ -52,7 +53,7 @@ def photo_msg(msg):
     bot.send_message(chat_id=chatid, text="😮")
     bot.reply_to(msg, text="Это что... Картинка???")
     bot.send_message(chat_id=chatid, text="Смотри че могу)")
-    urls, titles = img_processing(fileid=msg.photo[-1].file_id)
+    urls, titles, _ = img_processing(fileid=msg.photo[-1].file_id)
     time.sleep(1)
     for url in urls:
         photo_sender(chat_id=chatid, url=url)
@@ -66,7 +67,7 @@ def doc_msg(msg):
     time.sleep(1)
     bot.reply_to(msg, text="Вот и секретные докумееееееентики подъехали)")
     bot.send_message(chat_id=chatid, text="Ща верну, секунду")
-    urls, titles = img_processing(fileid=msg.document.file_id)
+    urls, titles, _ = img_processing(fileid=msg.document.file_id)
     time.sleep(1)
     for url in urls:
         photo_sender(chat_id=chatid, url=url)
@@ -76,8 +77,18 @@ def doc_msg(msg):
 
 def text_msg(msg):
     chatid = msg.chat.id
-    if not ("http" in msg.text):
-        urls, titles = a.wa_analyzer(msg.text)
+    if (msg.text.lower() == 'еще' or msg.text.lower() == 'ещё'):
+        urls, titles, msg_status = a.wa_analyzer()
+        if msg_status:
+            bot.send_message(chat_id=chatid, text="Одну секундочку...")
+            time.sleep(1)
+            for url in urls:
+                photo_sender(chatid, url=url)
+            bot.send_message(chat_id=chatid, text="Хоба!")
+        else:
+            bot.send_message(chat_id=chatid, text=urls)
+    elif not ("http" in msg.text):
+        urls, titles, _ = a.wa_analyzer(msg.text)
         bot.send_message(chat_id=chatid, text="Одну секундочку...")
         time.sleep(1)
         for url in urls:
@@ -88,7 +99,7 @@ def text_msg(msg):
         if re.match(pattern, msg.text, re.IGNORECASE):
             bot.send_message(chat_id=chatid, text="Сейчас пришлю что-нибудь...")
             time.sleep(1)
-            urls, titles = img_processing(url=msg.text)
+            urls, titles, _ = img_processing(url=msg.text)
             for url in urls:
                 photo_sender(chat_id=chatid, url=url)
         else:

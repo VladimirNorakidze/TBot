@@ -1,12 +1,12 @@
 import numpy as np
+import pandas as pd
+
+from annoy import AnnoyIndex
+from gensim.models import KeyedVectors, Word2Vec
 
 import re
 import pymorphy2
 from functools import lru_cache
-
-from annoy import AnnoyIndex
-from gensim.models import KeyedVectors
-
 
 morph = pymorphy2.MorphAnalyzer()
 
@@ -21,7 +21,7 @@ def normalize_text(x):
 
 
 class VisBotTextBrain:
-    
+
     def __init__(self, model_file, annoy_file):
         print("Loading w2v model...")
         self.model = KeyedVectors.load("./data/" + model_file)  # Word2Vec.load
@@ -29,35 +29,49 @@ class VisBotTextBrain:
         print("Loading annoy...")
         self.annoy.load("./data/" + annoy_file)
 
-    def run(self, request):
+    def run(self, request=None):
         """
         :param: request: str value
         :return: list of indexes in DB
         """
         request_list = normalize_text(request).split(' ')
 
+        if (len(request_list) == 1) and (request_list[0] == ''):
+            raise ValueError('Incorrect request')
+
+        vect_repr = self._get_vect_representation(request_list)
+
+        self.request = request
+        self.request_vector = vect_repr
+
+        return self.annoy.get_nns_by_vector(vect_repr, n=100)
+
+    def _get_vect_representation(self, request_list):
         vect_repr = []
         for word in request_list:
             try:
                 vect_repr.append(self.model.wv[word])
             except KeyError:
-                vect_repr.append([0]*300)
+                vect_repr.append([0] * 300)
 
         if vect_repr:
             vect_repr = np.mean(np.array(vect_repr), axis=0)
         else:
-            vect_repr = np.array([0]*300)
-    
-        self.request = request
-        self.request_vector = vect_repr
-    
-        return self.annoy.get_nns_by_vector(vect_repr, n=10)
+            vect_repr = np.array([0] * 300)
+
+        return vect_repr
 
 
-model_file = "w2v.model"
+# model_file = "w2v.model"
 annoy_file = "annoy15"
+model_file = "w2vsize300window2.model"
+# annoy_file = model_file + "_annoy_15"
 vbtb = VisBotTextBrain(model_file, annoy_file)
 
 
-def main(request):
-    return vbtb.run(request)
+def main(request=None):
+    if request:
+        try:
+            return vbtb.run(request=request)
+        except ValueError:
+            print('Incorrect request, bro. Type another string')

@@ -84,7 +84,7 @@ def photo_msg(msg):
     vk.messages.send(user_id=uid, message="Смотри че могу)", random_id=0)
     url = vk.messages.getHistoryAttachments(peer_id=event.user_id, media_type="photo",
                                             count=1)["items"][-1]["attachment"]["photo"]["sizes"][-1]["url"]
-    urls, titles = img_proc(url)
+    urls, titles, _ = img_proc(url)
     time.sleep(1)
     for url in urls:
         photo_sender(user_id=uid, url=url)
@@ -94,19 +94,29 @@ def photo_msg(msg):
 
 def text_msg(msg):
     uid = msg.user_id
-    if not ("http" in msg.text):
-        urls, titles = a.wa_analyzer(msg.text)
+    if (msg.text.lower() == 'еще' or msg.text.lower() == 'ещё'):
+        urls, titles, msg_status = a.wa_analyzer()
+        if msg_status:
+            vk.messages.send(user_id=uid, message="Одну секундочку...", random_id=0)
+            time.sleep(1)
+            for url in urls:
+                photo_sender(user_id=uid, url=url)
+            vk.messages.send(user_id=uid, message="Хоба!", random_id=0)
+        else:
+            vk.messages.send(user_id=uid, message=urls, random_id=0)
+    elif not ("http" in msg.text):
+        urls, titles, _ = a.wa_analyzer(text=msg.text)
         vk.messages.send(user_id=uid, message="Одну секундочку...", random_id=0)
         time.sleep(1)
         for url in urls:
             photo_sender(user_id=uid, url=url)
-        vk.messages.send(user_id=uid, message=msg_limiter("Хоба!"), random_id=0)
+        vk.messages.send(user_id=uid, message="Хоба!", random_id=0)
     else:
         pattern = r"^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+[.](jpg|jpeg|png|gif)$"
         if re.match(pattern, msg.text, re.IGNORECASE):
             vk.messages.send(user_id=uid, message="Сейчас, скачаю и пришлю", random_id=0)
             time.sleep(1)
-            urls, titles = img_proc(url=msg.text)
+            urls, titles, _ = img_proc(url=msg.text)
             for url in urls:
                 photo_sender(user_id=uid, url=url)
             vk.messages.send(user_id=uid, message="Хоба!", random_id=0)
@@ -115,9 +125,6 @@ def text_msg(msg):
                                               r"ссылка оканчивается на .jpg, .jpeg, .png или .gif...")
             titles = []
     return titles
-
-
-prev_index = None
 
 
 for event in longpoll.listen():
@@ -132,6 +139,7 @@ for event in longpoll.listen():
                 ans = f"{name}, я не смогу обработать сообщение состоящее из одного смайла..."
                 ans += "Пришли то, что хотел бы увидеть :3"
                 vk.messages.send(user_id=event.user_id, message=ans, random_id=0)
+                cache, start_time = logger.logger_vk(event, ans, cache, start_time)
             else:
                 ans = text_msg(event)
                 cache, start_time = logger.logger_vk(event, ans, cache, start_time)

@@ -14,19 +14,34 @@ data = data.fillna("NaN")
 print("Ready to work!")
 
 
-def wa_analyzer(msg: str):
-    indexes = TextBrain.main(msg)
-    urls = [data.iloc[idx].image_links for idx in indexes]
-    titles = [data.iloc[idx].title for idx in indexes]
-    return urls, titles
+idx = 0
+prev_text = ""
+indexes = []
+
+
+def wa_analyzer(text=None):
+    global idx, prev_text, indexes
+    n = 3
+    msg_status = True
+    if text is not None:
+        indexes = TextBrain.main(request=text)
+        prev_text = text
+        idx = 0
+    if indexes == []:
+        msg_status = False
+        return "Неа, введи одежду)", False, msg_status
+    urls = [data.iloc[i].image_links for i in indexes[idx:idx+n:]]
+    titles = [data.iloc[i].title for i in indexes[idx:idx+n:]]
+    idx += n
+    return urls, titles, msg_status
 
 
 def img_analyzer(response):
     img = Image.open(BytesIO(response.content))
-    width = 224
-    height = 224
+    width, height = (224, 224)
     img = img.resize((width, height), Image.ANTIALIAS)
     img = np.array(img).T
+    assert img.shape == (3, width, height)
     # subcategory = <функция, определяющая субкатегорию по фото>
     # urls, titles = wa_analyzer(subcategory)
     return wa_analyzer(subcategory)
