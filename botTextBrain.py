@@ -10,10 +10,6 @@ from gensim.models import KeyedVectors, Word2Vec
 import re
 import pymorphy2
 from functools import lru_cache
-<<<<<<< HEAD
-
-=======
->>>>>>> b24993da3f9504c6416436210161643d749d06a7
 morph = pymorphy2.MorphAnalyzer()
 
 
@@ -39,7 +35,6 @@ class VisBotTextBrain:
         :return: list of indexes in DB
         """
         request_list = normalize_text(request).split(' ')
-<<<<<<< HEAD
 
         if (len(request_list) == 1) and (request_list[0] == ''):
             raise ValueError('Incorrect request')
@@ -52,12 +47,6 @@ class VisBotTextBrain:
         return self.annoy.get_nns_by_vector(vect_repr, n=100)
 
     def _get_vect_representation(self, request_list):
-=======
-        
-        if (len(request_list)==1)and(request_list[0]==''):
-            raise ValueError('Uncorrect request')
-        
->>>>>>> b24993da3f9504c6416436210161643d749d06a7
         vect_repr = []
         for word in request_list:
             try:
@@ -73,7 +62,6 @@ class VisBotTextBrain:
         return vect_repr
 
 
-<<<<<<< HEAD
 # model_file = "w2v.model"
 annoy_file = "annoy15"
 model_file = "w2vsize300window2.model"
@@ -87,13 +75,3 @@ def main(request=None):
             return vbtb.run(request=request)
         except ValueError:
             print('Incorrect request, bro. Type another string')
-=======
-def main(request):
-    model_file = "w2v.model"
-    annoy_file = "annoy15"
-    vbtb = VisBotTextBrain(model_file, annoy_file)
-    try:
-        vbtb.run(request)
-    except ValueError:
-        print('Incorrect request, bro. Type another string')
->>>>>>> b24993da3f9504c6416436210161643d749d06a7
